@@ -12,6 +12,11 @@ const BeachList = ({
 
   const [editingIndex, setEditingIndex] = useState(null);
   const [editingBeach, setEditingBeach] = useState(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null); // { beach, idx }
+
+  const [sortMode, setSortMode] = useState(null); // 'rate' | 'location' | null
 
   const filtered = beaches.filter(
     (b) =>
@@ -19,13 +24,13 @@ const BeachList = ({
       b.location.toLowerCase().includes(search.toLowerCase())
   );
 
-  const sortByRate = () => {
-    beaches.sort((a, b) => a.rate - b.rate);
-  };
-
-  const sortByLocation = () => {
-    beaches.sort((a, b) => a.location.localeCompare(b.location));
-  };
+  // derive a displayed array from filtered + sortMode without mutating props
+  const displayed = [...filtered];
+  if (sortMode === "rate") {
+    displayed.sort((a, b) => a.rate - b.rate);
+  } else if (sortMode === "location") {
+    displayed.sort((a, b) => a.location.localeCompare(b.location));
+  }
 
   return (
     <div className="bg-blue-50 p-5 rounded-xl shadow overflow-x-auto">
@@ -36,25 +41,15 @@ const BeachList = ({
         onChange={(e) => setSearch(e.target.value)}
         className="w-full p-2 border rounded mb-3"
       />
-      <div className="flex gap-2 mb-3">
-        <button
-          onClick={() => {
-            sortByRate();
-          }}
-          className="bg-gray-200 px-3 py-1 rounded"
-        >
+  <div className="flex gap-2 mb-3">
+        <button onClick={() => setSortMode("rate")} className={`px-3 py-1 rounded ${sortMode === "rate" ? "bg-blue-200" : "bg-gray-200"}`}>
           Sort by Rate
         </button>
-        <button
-          onClick={() => {
-            sortByLocation();
-          }}
-          className="bg-gray-200 px-3 py-1 rounded"
-        >
+        <button onClick={() => setSortMode("location")} className={`px-3 py-1 rounded ${sortMode === "location" ? "bg-blue-200" : "bg-gray-200"}`}>
           Sort by Location
         </button>
         <button
-          onClick={clearAll}
+          onClick={() => setShowConfirm(true)}
           className="bg-red-300 px-3 py-1 rounded"
         >
           Clear All
@@ -70,11 +65,12 @@ const BeachList = ({
             <th>Rate</th>
             <th>Description</th>
             <th>Edit</th>
+            <th>Delete</th>
             <th>Action</th>
           </tr>
         </thead>
         <tbody>
-          {filtered.map((b, i) => {
+          {displayed.map((b, i) => {
             const originalIndex = beaches.indexOf(b);
             const idx = originalIndex >= 0 ? originalIndex : i;
             return (
@@ -105,6 +101,17 @@ const BeachList = ({
                     ✎ Edit
                   </button>
                 </td>
+                <td onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={() => {
+                      setDeleteTarget({ beach: b, idx });
+                      setShowDeleteConfirm(true);
+                    }}
+                    className="bg-red-500 text-white px-2 py-1 rounded"
+                  >
+                    ✖ Delete
+                  </button>
+                </td>
                 <td
                   className="flex gap-1"
                   onClick={(e) => e.stopPropagation()}
@@ -115,18 +122,40 @@ const BeachList = ({
                   >
                     ✔
                   </button>
-                  <button
-                    onClick={() => deleteBeach(b)}
-                    className="bg-red-500 text-white px-2 rounded"
-                  >
-                    ✖
-                  </button>
                 </td>
               </tr>
             );
           })}
         </tbody>
       </table>
+
+      {/* Clear All confirmation modal */}
+      {showConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-2">Confirm Clear All</h3>
+            <p className="text-sm text-gray-700">Are you sure you want to delete all beaches? This action cannot be undone.</p>
+            <div className="flex justify-end gap-3 mt-4">
+              <button onClick={() => setShowConfirm(false)} className="px-4 py-2 bg-gray-200 rounded">Cancel</button>
+              <button onClick={() => { clearAll(); setShowConfirm(false); }} className="px-4 py-2 bg-red-600 text-white rounded">Delete All</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Per-row Delete confirmation modal */}
+      {showDeleteConfirm && deleteTarget && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-2">Confirm Delete</h3>
+            <p className="text-sm text-gray-700">Are you sure you want to delete <span className="font-medium">{deleteTarget.beach.name}</span>?</p>
+            <div className="flex justify-end gap-3 mt-4">
+              <button onClick={() => { setShowDeleteConfirm(false); setDeleteTarget(null); }} className="px-4 py-2 bg-gray-200 rounded">Cancel</button>
+              <button onClick={() => { deleteBeach(deleteTarget.beach); setShowDeleteConfirm(false); setDeleteTarget(null); }} className="px-4 py-2 bg-red-600 text-white rounded">Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit modal */}
       {editingBeach && (
