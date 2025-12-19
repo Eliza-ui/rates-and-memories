@@ -56,14 +56,14 @@ const App = () => {
   };
 
   const markFavorite = (b) => {
-    if (!favorites.includes(b.description)) {
-      setFavorites([...favorites, b.description]);
+    if (!favorites.find((f) => f.name === b.name)) {
+      setFavorites([...favorites, b]);
     }
   };
 
   const deleteBeach = (b) => {
     setBeaches(beaches.filter((x) => x !== b));
-    setFavorites(favorites.filter((f) => f !== b.description));
+    setFavorites(favorites.filter((f) => f.name !== b.name));
   };
 
   const clearAll = () => {
@@ -105,12 +105,22 @@ const App = () => {
 
         <div>
           <h3 className="text-xl font-semibold mb-2">Favorite Memories:</h3>
-          <textarea
-            value={favorites.join("\n")}
-            readOnly
-            rows="6"
-            className="w-full p-4 border rounded bg-blue-50 text-lg leading-relaxed min-h-[160px]"
-          />
+          {favorites.length === 0 ? (
+            <p className="text-gray-600">No favorites yet. Click the ✔ button to add a beach to favorites.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {favorites.map((f, i) => (
+                <div key={i} className="border rounded p-3 bg-blue-50 flex gap-3 items-start">
+                  <img src={f.image} alt={f.name} className="w-20 h-20 object-cover rounded" />
+                  <div>
+                    <div className="font-semibold text-lg">{f.name}</div>
+                    <div className="text-sm text-gray-600">{f.location} • ₱{f.rate.toLocaleString()}</div>
+                    <p className="mt-2 text-gray-700">{f.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
